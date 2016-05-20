@@ -5,7 +5,31 @@ from bs4 import BeautifulSoup
 
 BASE_URL = 'https://www.avito.ru'
 CITY = '/sankt-peterburg?'
-QUERY = '&bt=1&i=1&q=macbook+pro+13'
+
+
+def get_query():
+    raw_query = input('Введите поисковый запрос: ')
+    query = '&q=' + '+'.join(raw_query.split(' '))
+
+    only_in_titles = input('Искать только в названиях?(Y/n): ').lower()
+
+    if only_in_titles == 'y':
+        bt = '&bt=1'
+    elif only_in_titles == 'n':
+        bt = ''
+    else:
+        pass
+
+    only_with_photo = input('Искать только с фотографиями?(Y/n): ').lower()
+
+    if only_with_photo == 'y':
+        i = '&i=1'
+    elif only_with_photo == 'n':
+        i = ''
+    else:
+        pass
+
+    return bt + i + query
 
 
 def get_html(url):
@@ -35,7 +59,7 @@ def parse(html):
 
         ads_before.append({
             'title': title.text.strip(),
-            'link': BASE_URL + title['href'],
+            'link': BASE_URL + title['href'].strip(),
             'price': price.text.strip(),
             'date': date.text.strip(),
             'extraInfo': [data.text.replace("\xa0", " ")
@@ -50,7 +74,7 @@ def parse(html):
 
         ads_after.append({
             'title': title.text.strip(),
-            'link': BASE_URL + title['href'],
+            'link': BASE_URL + title['href'].strip(),
             'price': price.text.strip(),
             'date': date.text.strip(),
             'extraInfo': [data.text.replace("\xa0", " ")
@@ -64,26 +88,33 @@ def parse(html):
 def save_to_csv(ads, path):
     with open(path, 'w') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(('Наименование', 'Ссылка', 'Цена',
-                        'Дата', 'Информация о продавце'))
+        writer.writerow(('Наименование', 'Цена',
+                        'Дата', 'Ссылка', 'Информация о продавце'))
 
         for ad in ads:
-            writer.writerow((ad['title'], ad['link'], ad['price'], ad['date'],
+            writer.writerow((ad['title'], ad['price'], ad['date'], ad['link'],
                              ', '.join(ad['extraInfo'])))
 
 
 def main():
-    page_count = get_page_count(get_html(BASE_URL + CITY + QUERY))
+
+    print('Здравствуйте! Вас приветствует парсер сайта Авито.'
+          'Пока поиск осуществляется только по Санкт-Петербургу.')
+
+    query = get_query()
+
+    page_count = get_page_count(get_html(BASE_URL + CITY + query))
     print('Pages found: %d' % page_count)
 
     ads = []
 
     for page in range(1, page_count + 1):
         print('Parsing %d%%' % (page / page_count * 100))
-        ads.extend(parse(get_html(BASE_URL + CITY + 'p=%d' % page + QUERY)))
+        ads.extend(parse(get_html(BASE_URL + CITY + 'p=%d' % page + query)))
 
     save_to_csv(ads, 'ads.csv')
 
 
 if __name__ == '__main__':
     main()
+
