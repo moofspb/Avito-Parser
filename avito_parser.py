@@ -3,7 +3,8 @@ import csv
 from bs4 import BeautifulSoup
 
 
-BASE_URL = 'https://www.avito.ru/sankt-peterburg?'
+BASE_URL = 'https://www.avito.ru'
+CITY = '/sankt-peterburg?'
 QUERY = '&bt=1&i=1&q=macbook+pro+13'
 
 
@@ -34,6 +35,7 @@ def parse(html):
 
         ads_before.append({
             'title': title.text.strip(),
+            'link': BASE_URL + title['href'],
             'price': price.text.strip(),
             'date': date.text.strip(),
             'extraInfo': [data.text.replace("\xa0", " ")
@@ -48,6 +50,7 @@ def parse(html):
 
         ads_after.append({
             'title': title.text.strip(),
+            'link': BASE_URL + title['href'],
             'price': price.text.strip(),
             'date': date.text.strip(),
             'extraInfo': [data.text.replace("\xa0", " ")
@@ -61,23 +64,23 @@ def parse(html):
 def save_to_csv(ads, path):
     with open(path, 'w') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(('Наименование', 'Цена',
+        writer.writerow(('Наименование', 'Ссылка', 'Цена',
                         'Дата', 'Информация о продавце'))
 
         for ad in ads:
-            writer.writerow((ad['title'], ad['price'], ad['date'],
+            writer.writerow((ad['title'], ad['link'], ad['price'], ad['date'],
                              ', '.join(ad['extraInfo'])))
 
 
 def main():
-    page_count = get_page_count(get_html(BASE_URL + QUERY))
+    page_count = get_page_count(get_html(BASE_URL + CITY + QUERY))
     print('Pages found: %d' % page_count)
 
     ads = []
 
     for page in range(1, page_count + 1):
         print('Parsing %d%%' % (page / page_count * 100))
-        ads.extend(parse(get_html(BASE_URL + 'p=%d' % page + QUERY)))
+        ads.extend(parse(get_html(BASE_URL + CITY + 'p=%d' % page + QUERY)))
 
     save_to_csv(ads, 'ads.csv')
 
